@@ -7,12 +7,12 @@
 //    Firebase პროექტის შექმნის მერე აქ ჩაისმება Firebase console → Project settings → Your apps → Web → firebaseConfig.
 //    ეს ვებ კონფიგურაცია საჯაროა, დაცვას firestore.rules აკეთებს.
 export const firebaseConfig = {
-  apiKey: '',            // TODO
-  authDomain: '',        // TODO
-  projectId: '',         // TODO
-  storageBucket: '',     // TODO
-  messagingSenderId: '', // TODO
-  appId: '',             // TODO
+  apiKey: 'AIzaSyCcAESbd5_VqBILvmbMEMeBY5tMfyqWk90',
+  authDomain: 'proper-marketing.firebaseapp.com',
+  projectId: 'proper-marketing',
+  storageBucket: 'proper-marketing.firebasestorage.app',
+  messagingSenderId: '343972245981',
+  appId: '1:343972245981:web:d2c35678bc505df71d0634',
 };
 
 // 2) ბრენდი

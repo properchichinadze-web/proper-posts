@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=49';
-import { BRAND } from './config.js?v=49';
+import { createStore } from './store.js?v=50';
+import { BRAND } from './config.js?v=50';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
