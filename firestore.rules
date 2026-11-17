@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && get(/databases/$(db)/documents/settings/main).data.adminUid == request.auth.uid;
+    }
+    // დაშვებული: მარკეტინგი ან ის, ვისაც მარკეტინგმა დაშვება მისცა
+    function approvedUser() {
+      return isAdmin() || (signedIn() && get(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('approved', false) == true);
+    }
+
+    // პოსტის დღეები + ადმინის id. პირველი ადმინი ქმნის ერთხელ.
+    match /settings/main {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.adminUid == request.auth.uid
+                    && !exists(/databases/$(db)/documents/settings/main);
+      allow update: if isAdmin() && request.resource.data.adminUid == resource.data.adminUid;
+    }
+
+    // ანგარიშები: ბრენდ მენეჯერი ხედავს და ცვლის მხოლოდ თავისას (როლს ვერა); ადმინი ყველაფერს.
+    match /users/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if signedIn() && request.auth.uid == uid
+                    && (((request.resource.data.role == 'brand' || request.resource.data.role == 'sales' || request.resource.data.role == 'leader') && request.resource.data.approved == false)
+                        || (request.resource.data.role == 'admin' && !exists(/databases/$(db)/documents/settings/main)));
+      allow update: if isAdmin()
+                    || (signedIn() && request.auth.uid == uid && request.resource.data.role == resource.data.role
+                        && request.resource.data.get('approved', true) == resource.data.get('approved', true));
+      allow delete: if isAdmin();
+    }
+
+    // პროდუქტები: მთავარ გვერდზე ყველა ხედავს; ბრენდ მენეჯერი ქმნის თავისას, შეცვლა არ შეუძლია (იკეტება); ადმინი ყველაფერს.
+    match /products/{pid} {
+      allow read: if approvedUser();
+      allow create: if signedIn() && request.resource.data.managerId == request.auth.uid
+                    && request.resource.data.status == 'new'
+                    && get(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('approved', false) == true;
+      allow update: if isAdmin()
+                    || (signedIn() && resource.data.managerId == request.auth.uid
+                        && resource.data.get('confirmed', false) != true && resource.data.get('pick', false) != true
+                        && request.resource.data.managerId == resource.data.managerId
+                        && request.resource.data.status == resource.data.status
+                        && request.resource.data.get('pick', false) == resource.data.get('pick', false));
+      // დადასტურებულის გაუქმება: მხოლოდ ერთხელ, უკან არ ბრუნდება
+      allow update: if signedIn() && resource.data.managerId == request.auth.uid
+                    && resource.data.get('confirmed', false) == true && resource.data.get('cancelled', false) != true
+                    && request.resource.data.cancelled == true
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['cancelled', 'cancelledAt']);
+      allow delete: if isAdmin();
+    }
+
+    // შენიშვნები პოსტებზე: ყველა კითხულობს; წერს მხოლოდ დაშვებული გაყიდვების მენეჯერი; „გასწორდა“ მხოლოდ ადმინი
+    match /notes/{nid} {
+      allow read: if approvedUser();
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid
+                    && get(/databases/$(db)/documents/users/$(request.auth.uid)).data.role == 'sales'
+                    && get(/databases/$(db)/documents/users/$(request.auth.uid)).data.get('approved', false) == true;
+      allow update: if isAdmin()
+                    || (signedIn() && resource.data.authorId == request.auth.uid && request.resource.data.withdrawn == true
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['withdrawn', 'withdrawnAt']));
+      allow delete: if isAdmin();
+    }
+
+    // ჩვენი გამზადებული პოსტები: ხედავს მხოლოდ დაშვებული, წერს მხოლოდ მარკეტინგი
+    match /posts/{pid} {
+      allow read: if approvedUser();
+      allow write: if isAdmin();
+    }
+  }
+}
