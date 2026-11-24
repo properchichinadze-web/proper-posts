@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=51';
-import { BRAND } from './config.js?v=51';
+import { createStore } from './store.js?v=52';
+import { BRAND } from './config.js?v=52';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -604,7 +604,7 @@ function uploadForm() {
     ${st ? `
     <label class="f">${st.link === 'youtube' ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link" required placeholder="${st.link === 'youtube' ? 'https://www.youtube.com/watch?v=...' : BRAND.shopUrl + '...'}"></label>
     ${st.link === 'youtube' ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე (თუ აქვს)<input type="url" name="shop" placeholder="${BRAND.shopUrl}..."></label>` : ''}
-    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი<input type="url" name="supplier" placeholder="https://..."></label>
+    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი *<input type="url" name="supplier" required placeholder="https://..."></label>
     <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name" required placeholder="მაგ. მომჭერი 150მმ 1000V YT-21190"></label>
     <div class="f">სურათები * (მაქს. 3)</div>
     <div class="imgs" id="imgs"></div>
@@ -719,7 +719,7 @@ function editProduct(id) {
     <div class="note small">${confirmBadge(p)} · სტილი: ${esc(STYLES[p.style]?.name || '')}</div>
     <label class="f">${linkYt ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link" required value="${esc(p.link)}"></label>
     ${linkYt ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე<input type="url" name="shop" value="${esc(p.shop || '')}"></label>` : ''}
-    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი<input type="url" name="supplier" value="${esc(p.supplier || '')}"></label>
+    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი *<input type="url" name="supplier" required value="${esc(p.supplier || '')}"></label>
     <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name" required value="${esc(p.name)}"></label>
     <div class="f">სურათები * (მაქს. 3)</div>
     <div class="imgs" id="imgs"></div>
@@ -735,7 +735,7 @@ function editProduct(id) {
     const f = new FormData(ev.target); const g = k => (f.get(k) || '').trim();
     if (!S.draftImgs.length) return $('#eerr', box).textContent = 'დაამატე მინიმუმ ერთი სურათი.';
     if (linkYt ? !/youtu\.?be/i.test(g('link')) : !shopOk(g('link'))) return $('#eerr', box).textContent = linkYt ? 'საჭიროა YouTube ვიდეოს ლინკი.' : 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
-    if (g('supplier') && !safeUrl(g('supplier'))) return $('#eerr', box).textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
+    if (!safeUrl(g('supplier'))) return $('#eerr', box).textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
     if (!priceOk(g('price'))) return $('#eerr', box).textContent = 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
     // ახალი პროდუქტის ფორმის სურათები ბრუნდება შენახვამდე (შენახვა ხელახლა ხატავს ფორმას)
     const imgs = S.draftImgs; S.draftImgs = keepDraft;
@@ -1014,7 +1014,7 @@ function bind() {
     if (!S.draftImgs.length) return err.textContent = 'დაამატე მინიმუმ ერთი სურათი.';
     if (STYLES[S.style].link === 'youtube' && !/youtu\.?be/i.test(data.link)) return err.textContent = '„' + STYLES[S.style].name + '“ სტილს სჭირდება YouTube ვიდეოს ლინკი.';
     if (STYLES[S.style].link === 'shop' && !shopOk(data.link)) return err.textContent = 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
-    if (data.supplier && !safeUrl(data.supplier)) return err.textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
+    if (!safeUrl(data.supplier)) return err.textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
     if (!priceOk(data.price)) return err.textContent = 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
     err.textContent = '';
     const verified = f.get('verified') === 'on';
