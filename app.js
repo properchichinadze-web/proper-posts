@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=50';
-import { BRAND } from './config.js?v=50';
+import { createStore } from './store.js?v=51';
+import { BRAND } from './config.js?v=51';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -602,9 +602,10 @@ function uploadForm() {
     <div class="styles">${Object.entries(STYLES).map(([k, s]) => `<button type="button" class="style-card ${S.style === k ? 'on' : ''}" data-style="${k}">
       <b>${s.name}</b><span>${s.what}</span><small>საჭიროა: ${s.need}</small></button>`).join('')}</div>
     ${st ? `
-    <label class="f">პროდუქტის სახელი და მოდელი *<input type="text" name="name" required placeholder="მაგ. მომჭერი 150მმ 1000V YT-21190"></label>
-    <label class="f">${st.link === 'youtube' ? 'YouTube ვიდეოს ლინკი *' : 'პროდუქტის ლინკი ' + BRAND.shopHost + '-ზე *'}<input type="url" name="link" required placeholder="${st.link === 'youtube' ? 'https://www.youtube.com/watch?v=...' : BRAND.shopUrl + '...'}"></label>
+    <label class="f">${st.link === 'youtube' ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link" required placeholder="${st.link === 'youtube' ? 'https://www.youtube.com/watch?v=...' : BRAND.shopUrl + '...'}"></label>
     ${st.link === 'youtube' ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე (თუ აქვს)<input type="url" name="shop" placeholder="${BRAND.shopUrl}..."></label>` : ''}
+    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი<input type="url" name="supplier" placeholder="https://..."></label>
+    <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name" required placeholder="მაგ. მომჭერი 150მმ 1000V YT-21190"></label>
     <div class="f">სურათები * (მაქს. 3)</div>
     <div class="imgs" id="imgs"></div>
     <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs" required placeholder="თითო მახასიათებელი ცალკე ხაზზე"></textarea></label>
@@ -663,7 +664,7 @@ function managerForm(m) {
 
 function detailsHtml(p) {
   const m = mgr(p.managerId);
-  const link = safeUrl(p.link), shop = safeUrl(p.shop);
+  const link = safeUrl(p.link), shop = safeUrl(p.shop), supplier = safeUrl(p.supplier);
   return `<div><span class="sbadge s${esc(p.style)}">${esc(STYLES[p.style]?.name || '')}</span></div>
     <h2 style="font-size:24px">${esc(p.name)}</h2>
     <div class="muted">${esc(m?.brand || p.brand)} · გამოგზავნა: <b>${esc(m?.fullName || p.managerName)}</b></div>
@@ -671,7 +672,8 @@ function detailsHtml(p) {
     <div class="grid2">
       <div><div class="lbl">ფასი</div><div class="price">${p.price ? esc(p.price) + ' ₾' : '-'}</div></div>
       <div><div class="lbl">${STYLES[p.style]?.link === 'youtube' ? 'YouTube ვიდეო' : 'ლინკი'}</div>${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="lnk">${esc(link)}</a>` : '-'}
-      ${shop ? `<div class="lbl" style="margin-top:8px">მაღაზია</div><a href="${esc(shop)}" target="_blank" rel="noopener" class="lnk">${esc(shop)}</a>` : ''}</div>
+      ${shop ? `<div class="lbl" style="margin-top:8px">მაღაზია</div><a href="${esc(shop)}" target="_blank" rel="noopener" class="lnk">${esc(shop)}</a>` : ''}
+      ${supplier ? `<div class="lbl" style="margin-top:8px">მომწოდებელი</div><a href="${esc(supplier)}" target="_blank" rel="noopener" class="lnk">${esc(supplier)}</a>` : ''}</div>
     </div>
     ${p.specs ? `<div><div class="row spread"><div class="lbl">მახასიათებლები</div><button class="btn ghost sm" id="m-copy">კოპირება</button></div><div class="specs">${esc(p.specs)}</div></div>` : ''}`;
 }
@@ -715,9 +717,10 @@ function editProduct(id) {
   const box = modal(`<form class="stack" id="eform">
     <h2>შესწორება</h2>
     <div class="note small">${confirmBadge(p)} · სტილი: ${esc(STYLES[p.style]?.name || '')}</div>
-    <label class="f">პროდუქტის სახელი და მოდელი *<input type="text" name="name" required value="${esc(p.name)}"></label>
-    <label class="f">${linkYt ? 'YouTube ვიდეოს ლინკი *' : 'პროდუქტის ლინკი ' + BRAND.shopHost + '-ზე *'}<input type="url" name="link" required value="${esc(p.link)}"></label>
+    <label class="f">${linkYt ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link" required value="${esc(p.link)}"></label>
     ${linkYt ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე<input type="url" name="shop" value="${esc(p.shop || '')}"></label>` : ''}
+    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი<input type="url" name="supplier" value="${esc(p.supplier || '')}"></label>
+    <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name" required value="${esc(p.name)}"></label>
     <div class="f">სურათები * (მაქს. 3)</div>
     <div class="imgs" id="imgs"></div>
     <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs" required>${esc(p.specs)}</textarea></label>
@@ -732,10 +735,11 @@ function editProduct(id) {
     const f = new FormData(ev.target); const g = k => (f.get(k) || '').trim();
     if (!S.draftImgs.length) return $('#eerr', box).textContent = 'დაამატე მინიმუმ ერთი სურათი.';
     if (linkYt ? !/youtu\.?be/i.test(g('link')) : !shopOk(g('link'))) return $('#eerr', box).textContent = linkYt ? 'საჭიროა YouTube ვიდეოს ლინკი.' : 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
+    if (g('supplier') && !safeUrl(g('supplier'))) return $('#eerr', box).textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
     if (!priceOk(g('price'))) return $('#eerr', box).textContent = 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
     // ახალი პროდუქტის ფორმის სურათები ბრუნდება შენახვამდე (შენახვა ხელახლა ხატავს ფორმას)
     const imgs = S.draftImgs; S.draftImgs = keepDraft;
-    try { await S.store.updateProduct(p.id, { name: g('name'), link: g('link'), shop: g('shop'), specs: g('specs'), price: g('price'), images: imgs }); closeModal(); toast('შესწორდა. არ დაგავიწყდეს დადასტურება ✓'); }
+    try { await S.store.updateProduct(p.id, { name: g('name'), link: g('link'), shop: g('shop'), supplier: g('supplier'), specs: g('specs'), price: g('price'), images: imgs }); closeModal(); toast('შესწორდა. არ დაგავიწყდეს დადასტურება ✓'); }
     catch (e) { S.draftImgs = imgs; $('#eerr', box).textContent = errText(e); }
   });
 }
@@ -1005,11 +1009,12 @@ function bind() {
     if (!m.cats?.length) { toast('ჯერ აირჩიე შენი მიმართულება'); return managerForm(m); }
     const f = new FormData(ev.target);
     const g = k => (f.get(k) || '').trim();
-    const data = { name: g('name'), link: g('link'), shop: g('shop'), specs: g('specs'), price: g('price'), images: S.draftImgs, style: S.style };
+    const data = { name: g('name'), link: g('link'), shop: g('shop'), supplier: g('supplier'), specs: g('specs'), price: g('price'), images: S.draftImgs, style: S.style };
     const err = $('#perr');
     if (!S.draftImgs.length) return err.textContent = 'დაამატე მინიმუმ ერთი სურათი.';
     if (STYLES[S.style].link === 'youtube' && !/youtu\.?be/i.test(data.link)) return err.textContent = '„' + STYLES[S.style].name + '“ სტილს სჭირდება YouTube ვიდეოს ლინკი.';
     if (STYLES[S.style].link === 'shop' && !shopOk(data.link)) return err.textContent = 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
+    if (data.supplier && !safeUrl(data.supplier)) return err.textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
     if (!priceOk(data.price)) return err.textContent = 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
     err.textContent = '';
     const verified = f.get('verified') === 'on';
