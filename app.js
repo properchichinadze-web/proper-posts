@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=52';
-import { BRAND } from './config.js?v=52';
+import { createStore } from './store.js?v=53';
+import { BRAND } from './config.js?v=53';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -23,7 +23,7 @@ const catText = m => (m?.cats || []).join(', ');
 const STYLES = BRAND.styles;
 
 const app = document.getElementById('app');
-const S = { role: null, notes: [], showForm: false, ours: [], store: null, user: null, ready: false, hasAdmin: true, managers: [], products: [], settings: { postDays: BRAND.postDays || [2, 5] }, month: null, mode: 'home', filter: 'all', draftImgs: [], style: null, unsub: [] };
+const S = { role: null, notes: [], showForm: false, ours: [], store: null, user: null, ready: false, hasAdmin: true, managers: [], products: [], settings: { postDays: BRAND.postDays || [2, 5] }, month: null, mode: 'home', filter: 'all', draftImgs: [], gImgs: [[]], open: new Set(), style: null, unsub: [] };
 
 // ───────── დამხმარე ─────────
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -220,9 +220,16 @@ function uploadsPublic(num = 3) {
   return `<div class="sec-title"><span class="num">${num}</span><div><h2>ბრენდ მენეჯერების ატვირთული</h2><div class="muted small">ყველა გამოგზავნილი პროდუქტი და მისი ეტაპი. გაუქმებული წითლად ჩანს.</div></div></div>
     <div class="tscroll"><table class="table">
       <thead><tr><th>ფოტო</th><th>პროდუქტი</th><th>ბრენდი</th><th>მენეჯერი</th><th>სტილი</th><th>გამოგზავნა</th><th>დადასტურება</th><th>ეტაპი</th><th>შენიშვნა</th></tr></thead>
-      <tbody>${list.length ? list.map(p => {
+      <tbody>${list.length ? groupsOf(list).map(g => {
+        const multi = g.length > 1, s0 = stageOf(g[0]);
+        const head = !multi ? '' : groupHead(g, (c1, c2) => `<td>${c1}</td><td class="strong">${c2}</td><td>${esc(g[0].brand)}</td><td>${esc(g[0].managerName)}</td>
+          <td><span class="sbadge s${esc(g[0].style)}">${esc(STYLES[g[0].style]?.name || '-')}</span></td>
+          <td class="muted">${g[0].createdAt ? esc(shortDate(iso(new Date(g[0].createdAt)))) : ''}</td>
+          <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>
+          <td><span class="badge ${s0.i === 4 ? 'b-posted' : s0.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s0.i])}</span></td><td></td>`);
+        return head + g.map(p => {
         const img = p.images?.[0]; const s = stageOf(p);
-        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : ''}">
+        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : ''}${gsub(p, multi)}">
           <td><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></td>
           <td class="strong">${esc(p.name)}</td>
           <td>${esc(p.brand)}</td>
@@ -233,7 +240,7 @@ function uploadsPublic(num = 3) {
           <td>${p.cancelled ? '<span class="badge b-missed">გაუქმებულია</span>' : `<span class="badge ${s.i === 4 ? 'b-posted' : s.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s.i])}</span>`}${s.i === 4 ? linksHtml(s.post) : ''}</td>
           <td data-stop>${noteCell(pkey(p))}</td>
         </tr>`;
-      }).join('') : '<tr><td colspan="9" class="empty">ჯერ არაფერი ატვირთულა</td></tr>'}</tbody>
+      }).join(''); }).join('') : '<tr><td colspan="9" class="empty">ჯერ არაფერი ატვირთულა</td></tr>'}</tbody>
     </table></div>`;
 }
 
@@ -485,11 +492,18 @@ function bigTable() {
     <div class="filters">${pills.map(([k, t]) => `<button class="pill ${S.filter === k ? 'on' : ''}" data-filter="${esc(k)}">${esc(t)}</button>`).join('')}</div>
     <div class="tscroll"><table class="table">
       <thead><tr><th>ვიმუშაოთ</th><th>ფოტო</th><th>პროდუქტი</th><th>ბრენდი</th><th>მენეჯერი</th><th>სტილი</th><th>ფასი</th><th>ლინკი</th><th>გამოგზავნა</th><th>დადასტურება</th></tr></thead>
-      <tbody>${list.length ? list.map(p => {
+      <tbody>${list.length ? groupsOf(list).map(g => {
+        const multi = g.length > 1, m0 = mgr(g[0].managerId);
+        const live = g.filter(p => !p.cancelled), gp = live.length && live.every(p => p.pick);
+        const head = !multi ? '' : groupHead(g, (c1, c2) => `<td data-stop>${live.length ? `<label class="pick"><input type="checkbox" data-pick="${live.map(p => p.id).join(',')}" ${gp ? 'checked' : ''}><span>✓</span></label>` : '<span class="muted">-</span>'}</td><td>${c1}</td><td class="strong">${c2}</td><td>${esc(m0?.brand || g[0].brand)}</td><td>${esc(m0?.fullName || g[0].managerName)}</td>
+          <td><span class="sbadge s${esc(g[0].style)}">${esc(STYLES[g[0].style]?.name || '-')}</span></td><td></td><td></td>
+          <td class="muted">${g[0].createdAt ? esc(shortDate(iso(new Date(g[0].createdAt)))) : ''}</td>
+          <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>`);
+        return head + g.map(p => {
         const m = mgr(p.managerId); const img = p.images?.[0];
         const link = safeUrl(p.link);
-        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : p.pick ? 'picked' : ''}">
-          <td data-stop>${p.cancelled ? '<span class="muted">-</span>' : `<label class="pick"><input type="checkbox" data-pick="${p.id}" ${p.pick ? 'checked' : ''}><span>✓</span></label>`}</td>
+        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : p.pick ? 'picked' : ''}${gsub(p, multi)}">
+          <td data-stop>${multi ? '' : p.cancelled ? '<span class="muted">-</span>' : `<label class="pick"><input type="checkbox" data-pick="${p.id}" ${p.pick ? 'checked' : ''}><span>✓</span></label>`}</td>
           <td><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></td>
           <td class="strong">${esc(p.name)}</td>
           <td>${esc(m?.brand || p.brand)}</td>
@@ -500,7 +514,7 @@ function bigTable() {
           <td class="muted">${p.createdAt ? esc(shortDate(iso(new Date(p.createdAt)))) : ''}</td>
           <td>${confirmBadge(p)}${openNotes(pkey(p)).length ? ` <span class="nflag">⚠ ${openNotes(pkey(p)).length}</span>` : ''}</td>
         </tr>`;
-      }).join('') : '<tr><td colspan="10" class="empty">ჯერ არაფერი ატვირთულა</td></tr>'}</tbody>
+      }).join(''); }).join('') : '<tr><td colspan="10" class="empty">ჯერ არაფერი ატვირთულა</td></tr>'}</tbody>
     </table></div>`;
 }
 
@@ -602,19 +616,59 @@ function uploadForm() {
     <div class="styles">${Object.entries(STYLES).map(([k, s]) => `<button type="button" class="style-card ${S.style === k ? 'on' : ''}" data-style="${k}">
       <b>${s.name}</b><span>${s.what}</span><small>საჭიროა: ${s.need}</small></button>`).join('')}</div>
     ${st ? `
-    <label class="f">${st.link === 'youtube' ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link" required placeholder="${st.link === 'youtube' ? 'https://www.youtube.com/watch?v=...' : BRAND.shopUrl + '...'}"></label>
-    ${st.link === 'youtube' ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე (თუ აქვს)<input type="url" name="shop" placeholder="${BRAND.shopUrl}..."></label>` : ''}
-    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი *<input type="url" name="supplier" required placeholder="https://..."></label>
-    <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name" required placeholder="მაგ. მომჭერი 150მმ 1000V YT-21190"></label>
-    <div class="f">სურათები * (მაქს. 3)</div>
-    <div class="imgs" id="imgs"></div>
-    <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs" required placeholder="თითო მახასიათებელი ცალკე ხაზზე"></textarea></label>
-    <label class="f">ფასი (₾) *<input type="text" name="price" required inputmode="decimal" placeholder="მაგ. 249"></label>
+    <div class="design">
+      <div><div class="dtitle">ერთი დიზაინი (1 პოსტერი ან 1 ვიდეო)</div><div class="muted small">აქ დამატებული ყველა პროდუქტი ერთ პოსტერზე / ერთ ვიდეოში შევა. მაქს. ${MAXP} პროდუქტი.</div></div>
+      ${S.gImgs.map((_, i) => prodBlock(i, st)).join('')}
+      ${S.gImgs.length < MAXP ? '<button type="button" class="addp" id="addp">+ კიდევ ერთი პროდუქტი ამ დიზაინში</button>' : ''}
+    </div>
     <label class="vcheck"><input type="checkbox" name="verified"><span class="vbox">✓</span><span><b>100% გადამოწმებულია</b><small>თუ ახლა არ მონიშნავ, 3 საათი გაქვს გადასამოწმებლად. მონიშვნის მერე შეცვლა აღარ იქნება.</small></span></label>
     <div class="err" id="perr"></div>
-    <div><button class="btn orange big" id="psubmit">გამოგზავნა</button></div>` : ''}
+    <div><button class="btn orange big" id="psubmit">გამოგზავნა: 1 დიზაინი, ${S.gImgs.length} პროდუქტი</button></div>` : ''}
   </form>`;
 }
+// ერთი დიზაინის (ერთი პოსტის) პროდუქტები: თითო ბლოკი, ველების სახელები ნომრით (name_0, name_1 ...)
+const MAXP = 6;
+const PFIELDS = ['link', 'shop', 'supplier', 'name', 'specs', 'price'];
+function prodBlock(i, st) {
+  const yt = st.link === 'youtube';
+  return `<div class="pblock">
+    <div class="row spread"><b>პროდუქტი ${i + 1}</b>${S.gImgs.length > 1 ? `<button type="button" class="btn ghost sm" data-pbdel="${i}">✕ ამოღება</button>` : ''}</div>
+    <label class="f">${yt ? 'YouTube ვიდეოს ლინკი *' : '1. ჩვენი მაღაზიის პროდუქტის ლინკი (' + BRAND.shopHost + ') *'}<input type="url" name="link_${i}" required placeholder="${yt ? 'https://www.youtube.com/watch?v=...' : BRAND.shopUrl + '...'}"></label>
+    ${yt ? `<label class="f">პროდუქტის ლინკი ${BRAND.shopHost}-ზე (თუ აქვს)<input type="url" name="shop_${i}" placeholder="${BRAND.shopUrl}..."></label>` : ''}
+    <label class="f">2. მომწოდებლის მაღაზიის პროდუქტის ლინკი *<input type="url" name="supplier_${i}" required placeholder="https://..."></label>
+    <label class="f">3. პროდუქტის დასახელება *<input type="text" name="name_${i}" required placeholder="მაგ. მომჭერი 150მმ 1000V YT-21190"></label>
+    <div class="f">სურათები * (მაქს. 3)</div>
+    <div class="imgs" data-gimgs="${i}"></div>
+    <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs_${i}" required placeholder="თითო მახასიათებელი ცალკე ხაზზე"></textarea></label>
+    <label class="f">ფასი (₾) *<input type="text" name="price_${i}" required inputmode="decimal" placeholder="მაგ. 249"></label>
+  </div>`;
+}
+function drawGImgs() {
+  $$('[data-gimgs]').forEach(box => {
+    const i = Number(box.dataset.gimgs), arr = S.gImgs[i] || [];
+    box.innerHTML = arr.map((src, k) => `<div><img src="${src}" alt=""><button type="button" data-grm="${k}" aria-label="წაშლა">×</button></div>`).join('')
+      + (arr.length < 3 ? `<label class="drop">+<span>სურათი</span><input type="file" accept="image/*" multiple hidden></label>` : '');
+    $$('[data-grm]', box).forEach(b => b.addEventListener('click', () => { arr.splice(Number(b.dataset.grm), 1); drawGImgs(); }));
+    $('input[type=file]', box)?.addEventListener('change', async (ev) => {
+      for (const f of [...ev.target.files].slice(0, 3 - arr.length)) { try { arr.push(await shrink(f)); } catch (e) { toast(e.message); } }
+      drawGImgs();
+    });
+  });
+}
+
+// ცხრილებში: ერთი დიზაინის პროდუქტები ერთ ხაზად, „+“-ით იშლება
+const gid = p => p.groupId || p.id;
+function groupsOf(list) {
+  const m = new Map();
+  for (const p of list) { const k = gid(p); if (!m.has(k)) m.set(k, []); m.get(k).push(p); }
+  return [...m.values()].map(g => g.sort((a, b) => (a.groupIdx ?? 0) - (b.groupIdx ?? 0)));
+}
+function groupHead(g, cells) {
+  const k = gid(g[0]), open = S.open.has(k), img = g.find(p => p.images?.[0])?.images[0];
+  return `<tr class="ghead" data-gtoggle="${esc(k)}">${cells(`<div class="gcell"><span class="gpm">${open ? '−' : '+'}</span><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></div>`,
+    `<b>ერთი დიზაინი</b><span class="gcnt">${g.length} პროდუქტი</span>`)}</tr>`;
+}
+const gsub = (p, multi) => multi ? ` gsub" data-gof="${esc(gid(p))}" style="${S.open.has(gid(p)) ? '' : 'display:none'}` : '';
 
 // ───────── მოდალები ─────────
 function modal(html, wide) {
@@ -676,6 +730,32 @@ function detailsHtml(p) {
       ${supplier ? `<div class="lbl" style="margin-top:8px">მომწოდებელი</div><a href="${esc(supplier)}" target="_blank" rel="noopener" class="lnk">${esc(supplier)}</a>` : ''}</div>
     </div>
     ${p.specs ? `<div><div class="row spread"><div class="lbl">მახასიათებლები</div><button class="btn ghost sm" id="m-copy">კოპირება</button></div><div class="specs">${esc(p.specs)}</div></div>` : ''}`;
+}
+
+// ერთი დიზაინის ყველა პროდუქტი ერთ ფანჯარაში: ფოტოები, ლინკები, ფასი, მახასიათებლები + ყველაფრის კოპირება
+function groupText(g) {
+  return g.map((p, i) => [`${i + 1}. ${p.name}`, `ფასი: ${p.price ? p.price + ' ₾' : '-'}`, `ლინკი: ${p.link || '-'}`, p.shop ? `მაღაზია: ${p.shop}` : '', `მომწოდებელი: ${p.supplier || '-'}`, `მახასიათებლები:\n${p.specs || '-'}`].filter(Boolean).join('\n')).join('\n\n');
+}
+function viewGroup(k) {
+  const g = groupsOf(S.products.filter(p => gid(p) === k))[0]; if (!g) return;
+  const p0 = g[0], m = mgr(p0.managerId);
+  const box = modal(`<div class="stack">
+    <div><span class="sbadge s${esc(p0.style)}">${esc(STYLES[p0.style]?.name || '')}</span></div>
+    <h2 style="font-size:24px">ერთი დიზაინი · ${g.length} პროდუქტი</h2>
+    <div class="muted">${esc(m?.brand || p0.brand)} · გამოგზავნა: <b>${esc(m?.fullName || p0.managerName)}</b></div>
+    <div class="row"><button class="btn orange" id="g-copy">ყველაფრის კოპირება</button><button class="btn ghost" id="g-dl">ყველა ფოტოს ჩამოტვირთვა</button></div>
+    ${g.map((p, i) => { const link = safeUrl(p.link), shop = safeUrl(p.shop), sup = safeUrl(p.supplier); return `<div class="gitem ${p.cancelled ? 'cancelled' : ''}">
+      <div class="row spread"><b style="font-size:17px">${i + 1}. ${esc(p.name)}</b><span class="price">${p.price ? esc(p.price) + ' ₾' : '-'}</span></div>
+      ${p.cancelled ? '<span class="badge b-missed">გაუქმებულია</span>' : ''}
+      ${p.images?.length ? `<div class="gimgs">${p.images.map((s, j) => `<a href="${s}" download="${esc(p.name)}_${j + 1}.jpg" title="ჩამოტვირთვა"><img src="${s}" alt=""></a>`).join('')}</div>` : ''}
+      <div class="glinks"><span class="lbl">${STYLES[p.style]?.link === 'youtube' ? 'YouTube' : 'ლინკი'}</span>${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="lnk">${esc(link)}</a>` : '-'}
+      ${shop ? `<span class="lbl">მაღაზია</span><a href="${esc(shop)}" target="_blank" rel="noopener" class="lnk">${esc(shop)}</a>` : ''}
+      <span class="lbl">მომწოდებელი</span>${sup ? `<a href="${esc(sup)}" target="_blank" rel="noopener" class="lnk">${esc(sup)}</a>` : '-'}</div>
+      ${p.specs ? `<div class="specs">${esc(p.specs)}</div>` : ''}
+    </div>`; }).join('')}
+  </div>`, true);
+  $('#g-copy', box).addEventListener('click', () => copy(groupText(g)));
+  $('#g-dl', box).addEventListener('click', () => $$('.gimgs a', box).forEach((a, i) => setTimeout(() => a.click(), i * 300)));
 }
 
 // ყველასთვის: პროდუქტი / დღის პოსტები (მხოლოდ სანახავად)
@@ -922,7 +1002,7 @@ function bind() {
     try { await S.store.saveSettings({ workRequest: { at: Date.now(), status: 'waiting', ids: picked.map(p => p.id) } }); toast('გაიგზავნა Claude-სთვის'); } catch (e) { toast(errText(e)); }
   });
   $$('[data-pick]').forEach(c => c.addEventListener('change', async () => {
-    try { await S.store.updateProduct(c.dataset.pick, { pick: c.checked }); toast(c.checked ? 'მოინიშნა: ამაზე ვიმუშავებთ' : 'მონიშვნა მოიხსნა'); } catch (e) { toast(errText(e)); c.checked = !c.checked; }
+    try { for (const id of c.dataset.pick.split(',')) await S.store.updateProduct(id, { pick: c.checked }); toast(c.checked ? 'მოინიშნა: ამაზე ვიმუშავებთ' : 'მონიშვნა მოიხსნა'); } catch (e) { toast(errText(e)); c.checked = !c.checked; }
   }));
   $('#import-posts')?.addEventListener('click', importPosts);
   $$('[data-rclear]').forEach(b => b.addEventListener('click', async () => {
@@ -963,9 +1043,35 @@ function bind() {
     if (!await ask('ადასტურებ, რომ ყველაფერი 100% გადამოწმებულია? გამწვანდება და შეცვლა აღარ იქნება.')) return;
     try { await S.store.updateProduct(b.dataset.pconfirm, { confirmed: true, confirmedAt: Date.now() }); toast('დადასტურდა ✓'); } catch (e) { toast(errText(e)); }
   }));
-  $('#new-prod')?.addEventListener('click', () => { S.showForm = !S.showForm; if (!S.showForm) { S.style = null; S.draftImgs = []; } render(); if (S.showForm) $('#pform')?.scrollIntoView({ block: 'start' }); });
+  $('#new-prod')?.addEventListener('click', () => { S.showForm = !S.showForm; if (!S.showForm) { S.style = null; S.draftImgs = []; S.gImgs = [[]]; S.formDraft = null; } render(); if (S.showForm) $('#pform')?.scrollIntoView({ block: 'start' }); });
   $$('[data-style]').forEach(b => b.addEventListener('click', () => { keepForm(); S.style = b.dataset.style; render(); restoreForm(); }));
-  drawImgs();
+  drawImgs(); drawGImgs();
+  $('#addp')?.addEventListener('click', () => {
+    if (S.gImgs.length >= MAXP) return;
+    keepForm(); S.gImgs.push([]); render(); restoreForm();
+    $$('.pblock').at(-1)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  });
+  $$('[data-pbdel]').forEach(b => b.addEventListener('click', async () => {
+    const i = Number(b.dataset.pbdel);
+    if (!await ask(`ამოვიღო პროდუქტი ${i + 1}?`)) return;
+    keepForm(); const d = S.formDraft || {}, nd = {};
+    for (const [k, v] of Object.entries(d)) {
+      const mm = k.match(/^(\w+)_(\d+)$/);
+      if (!mm || !PFIELDS.includes(mm[1])) { nd[k] = v; continue; }
+      const j = Number(mm[2]); if (j === i) continue;
+      nd[`${mm[1]}_${j > i ? j - 1 : j}`] = v;
+    }
+    S.formDraft = nd; S.gImgs.splice(i, 1); render(); restoreForm();
+  }));
+  $$('[data-gtoggle]').forEach(r => r.addEventListener('click', (e) => {
+    if (e.target.closest('[data-stop]')) return;
+    const k = r.dataset.gtoggle;
+    if (!e.target.closest('.gpm')) return viewGroup(k);
+    const open = !S.open.has(k);
+    open ? S.open.add(k) : S.open.delete(k);
+    $('.gpm', r).textContent = open ? '−' : '+';
+    $$(`[data-gof="${CSS.escape(k)}"]`, r.closest('tbody')).forEach(x => x.style.display = open ? '' : 'none');
+  }));
 
   bindNotes(document);
   $$('[data-ourview]').forEach(b => b.addEventListener('click', () => { const p = findItem(b.dataset.ourview); if (!p) return; const box = modal(`<div class="stack"><h2>${esc(p.name)}</h2>${p.images?.length ? `<div class="big-imgs post-imgs">${p.images.map(s => `<img src="${s}" alt="">`).join('')}</div>` : ''}${videosHtml(p)}${notesHtml(p)}<div class="specs">${esc(p.postText || '')}</div></div>`, true); bindNotes(box); }));
@@ -1008,21 +1114,29 @@ function bind() {
     const m = S.user; if (!isBrand() || !approved(m) || !S.style) return;
     if (!m.cats?.length) { toast('ჯერ აირჩიე შენი მიმართულება'); return managerForm(m); }
     const f = new FormData(ev.target);
-    const g = k => (f.get(k) || '').trim();
-    const data = { name: g('name'), link: g('link'), shop: g('shop'), supplier: g('supplier'), specs: g('specs'), price: g('price'), images: S.draftImgs, style: S.style };
-    const err = $('#perr');
-    if (!S.draftImgs.length) return err.textContent = 'დაამატე მინიმუმ ერთი სურათი.';
-    if (STYLES[S.style].link === 'youtube' && !/youtu\.?be/i.test(data.link)) return err.textContent = '„' + STYLES[S.style].name + '“ სტილს სჭირდება YouTube ვიდეოს ლინკი.';
-    if (STYLES[S.style].link === 'shop' && !shopOk(data.link)) return err.textContent = 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
-    if (!safeUrl(data.supplier)) return err.textContent = 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
-    if (!priceOk(data.price)) return err.textContent = 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
+    const n = S.gImgs.length, err = $('#perr');
+    const items = [];
+    for (let i = 0; i < n; i++) {
+      const g = k => (f.get(k + '_' + i) || '').trim(), pre = n > 1 ? `პროდუქტი ${i + 1}: ` : '';
+      const data = { name: g('name'), link: g('link'), shop: g('shop'), supplier: g('supplier'), specs: g('specs'), price: g('price'), images: S.gImgs[i], style: S.style };
+      if (!data.images.length) return err.textContent = pre + 'დაამატე მინიმუმ ერთი სურათი.';
+      if (STYLES[S.style].link === 'youtube' && !/youtu\.?be/i.test(data.link)) return err.textContent = pre + '„' + STYLES[S.style].name + '“ სტილს სჭირდება YouTube ვიდეოს ლინკი.';
+      if (STYLES[S.style].link === 'shop' && !shopOk(data.link)) return err.textContent = pre + 'ჩასვი პროდუქტის ლინკი ' + BRAND.shopHost + '-დან.';
+      if (!safeUrl(data.supplier)) return err.textContent = pre + 'მომწოდებლის ლინკი არასწორია (უნდა იწყებოდეს https://).';
+      if (!priceOk(data.price)) return err.textContent = pre + 'ფასი ციფრებით ჩაწერე (მაგ. 249).';
+      items.push(data);
+    }
     err.textContent = '';
     const verified = f.get('verified') === 'on';
-    if (!await ask(verified ? 'გამოვაგზავნო? მონიშნული გაქვს „100% გადამოწმებულია“: შეცვლა აღარ იქნება.' : 'გამოვაგზავნო? 3 საათში უნდა დაადასტურო, რომ ყველაფერი სწორია.')) return;
+    const what = n > 1 ? `1 დიზაინი, ${n} პროდუქტი` : '1 პროდუქტი';
+    if (!await ask(verified ? `გამოვაგზავნო (${what})? მონიშნული გაქვს „100% გადამოწმებულია“: შეცვლა აღარ იქნება.` : `გამოვაგზავნო (${what})? 3 საათში უნდა დაადასტურო, რომ ყველაფერი სწორია.`)) return;
     $('#psubmit').disabled = true;
+    // ერთი დიზაინის პროდუქტებს საერთო groupId აქვთ: ასე ჩანს, რომ ერთ პოსტში შედის
+    const grp = n > 1 ? { groupId: 'g' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), groupSize: n } : {};
+    const now = Date.now();
     try {
-      await S.store.addProduct({ ...data, managerId: m.uid, managerName: m.fullName, brand: m.brand, status: 'new', date: null, ...(verified ? { confirmed: true, confirmedAt: Date.now() } : {}) });
-      S.draftImgs = []; S.style = null; S.formDraft = null; S.showForm = false;
+      for (let i = 0; i < n; i++) await S.store.addProduct({ ...items[i], ...grp, ...(n > 1 ? { groupIdx: i } : {}), managerId: m.uid, managerName: m.fullName, brand: m.brand, status: 'new', date: null, createdAt: now, ...(verified ? { confirmed: true, confirmedAt: now } : {}) });
+      S.draftImgs = []; S.gImgs = [[]]; S.style = null; S.formDraft = null; S.showForm = false;
       toast('გამოიგზავნა ✓'); render();
     } catch (e) { err.textContent = errText(e); $('#psubmit').disabled = false; }
   });
