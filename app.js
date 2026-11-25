@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=53';
-import { BRAND } from './config.js?v=53';
+import { createStore } from './store.js?v=54';
+import { BRAND } from './config.js?v=54';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -451,7 +451,7 @@ function teamCards() {
       return `<div class="tcard">
         <div class="row"><span class="av">${esc(initials(m.fullName))}</span><span class="grow"><b>${esc(m.brand)}</b><small>${esc(m.fullName)} · ${esc(m.username || '')}</small></span></div>
         <div class="tcats">${(m.cats || []).map(x => `<span>${esc(x)}</span>`).join('') || '<span>მიმართულება არ არის</span>'}</div>
-        <div class="tnums"><span><b>${P.length}</b>გამოგზავნილი</span><span class="${P.some(p => p.cancelled) ? 'bad' : ''}"><b>${P.filter(p => p.cancelled).length}</b>გაუქმებული (შეცდომა)</span></div>
+        <div class="tnums"><span><b>${groupsOf(P).length}</b>გამოგზავნილი</span><span class="${P.some(p => p.cancelled) ? 'bad' : ''}"><b>${P.filter(p => p.cancelled).length}</b>გაუქმებული (შეცდომა)</span></div>
         <div class="tact">
           <button class="btn sm" data-mgr="${m.id}">გახსნა</button>
           <button class="icon" data-medit="${m.id}" title="შეცვლა" aria-label="შეცვლა">✎</button>
@@ -867,9 +867,18 @@ function openManager(id) {
   const box = modal(`<div class="stack">
     <div class="row"><span class="av lg">${esc(initials(m.fullName))}</span><div><h2 style="font-size:24px">${esc(m.brand)}</h2><div class="muted">${esc(m.fullName)} · მომხმარებელი: ${esc(m.username || '')}</div></div></div>
     <div class="tcats">${(m.cats || []).map(x => `<span>${esc(x)}</span>`).join('')}</div>
-    <div class="lbl">გამოგზავნილი პროდუქტები (${P.length})</div>
-    <div class="tbl">${P.length ? P.map(p => {
-      const img = p.images?.[0];
+    <div class="lbl">გამოგზავნილი (${groupsOf(P).length})</div>
+    <div class="tbl">${P.length ? groupsOf(P).map(g => {
+      if (g.length > 1) {
+        const img = g.find(p => p.images?.[0])?.images[0], p0 = g[0];
+        return `<button class="trow" data-grp="${esc(gid(p0))}">
+        <span class="thumb" style="${img ? `background-image:url('${img}')` : ''}"></span>
+        <span class="tname"><b>ერთი დიზაინი <span class="gcnt">${g.length} პროდუქტი</span></b><small>${esc(STYLES[p0.style]?.name || '')} · ${esc(g.map(p => p.name).join(', '))}</small></span>
+        <span></span>
+        <span class="muted small">${p0.createdAt ? esc(shortDate(iso(new Date(p0.createdAt)))) : ''}</span>
+      </button>`;
+      }
+      const p = g[0], img = p.images?.[0];
       return `<button class="trow" data-prod="${p.id}">
         <span class="thumb" style="${img ? `background-image:url('${img}')` : ''}"></span>
         <span class="tname"><b>${esc(p.name)}</b><small>${esc(STYLES[p.style]?.name || '')} · ${p.price ? esc(p.price) + ' ₾' : ''}</small></span>
@@ -879,6 +888,7 @@ function openManager(id) {
     }).join('') : '<div class="empty">ჯერ არაფერი გამოუგზავნია</div>'}</div>
   </div>`, true);
   $$('[data-prod]', box).forEach(b => b.addEventListener('click', () => openProduct(b.dataset.prod)));
+  $$('[data-grp]', box).forEach(b => b.addEventListener('click', () => viewGroup(b.dataset.grp)));
 }
 
 function openDay(ds) {
