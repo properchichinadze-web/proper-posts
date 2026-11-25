@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=54';
-import { BRAND } from './config.js?v=54';
+import { createStore } from './store.js?v=55';
+import { BRAND } from './config.js?v=55';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -871,12 +871,15 @@ function openManager(id) {
     <div class="tbl">${P.length ? groupsOf(P).map(g => {
       if (g.length > 1) {
         const img = g.find(p => p.images?.[0])?.images[0], p0 = g[0];
-        return `<button class="trow" data-grp="${esc(gid(p0))}">
-        <span class="thumb" style="${img ? `background-image:url('${img}')` : ''}"></span>
-        <span class="tname"><b>ერთი დიზაინი <span class="gcnt">${g.length} პროდუქტი</span></b><small>${esc(STYLES[p0.style]?.name || '')} · ${esc(g.map(p => p.name).join(', '))}</small></span>
-        <span></span>
-        <span class="muted small">${p0.createdAt ? esc(shortDate(iso(new Date(p0.createdAt)))) : ''}</span>
-      </button>`;
+        return `<div class="gbox">
+        <div class="ghd"><b>ერთი დიზაინი</b><span class="gcnt">${g.length} პროდუქტი</span><small>${esc(STYLES[p0.style]?.name || '')} · ${p0.createdAt ? esc(shortDate(iso(new Date(p0.createdAt)))) : ''}</small></div>
+        ${g.map(p => { const im = p.images?.[0]; return `<button class="trow" data-prod="${p.id}">
+          <span class="thumb" style="${im ? `background-image:url('${im}')` : ''}"></span>
+          <span class="tname"><b>${esc(p.name)}</b><small>${p.price ? esc(p.price) + ' ₾' : ''}</small></span>
+          <span></span>
+          <span class="muted small">${p.cancelled ? '<span class="badge b-missed">გაუქმებულია</span>' : ''}</span>
+        </button>`; }).join('')}
+      </div>`;
       }
       const p = g[0], img = p.images?.[0];
       return `<button class="trow" data-prod="${p.id}">
@@ -888,7 +891,6 @@ function openManager(id) {
     }).join('') : '<div class="empty">ჯერ არაფერი გამოუგზავნია</div>'}</div>
   </div>`, true);
   $$('[data-prod]', box).forEach(b => b.addEventListener('click', () => openProduct(b.dataset.prod)));
-  $$('[data-grp]', box).forEach(b => b.addEventListener('click', () => viewGroup(b.dataset.grp)));
 }
 
 function openDay(ds) {
