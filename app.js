@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=60';
-import { BRAND } from './config.js?v=60';
+import { createStore } from './store.js?v=61';
+import { BRAND } from './config.js?v=61';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -226,7 +226,7 @@ function uploadsPublic(num = 3) {
           <td><span class="sbadge s${esc(g[0].style)}">${esc(STYLES[g[0].style]?.name || '-')}</span></td>
           <td class="muted">${g[0].createdAt ? esc(shortDate(iso(new Date(g[0].createdAt)))) : ''}</td>
           <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>
-          <td><span class="badge ${s0.i === 4 ? 'b-posted' : s0.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s0.i])}</span></td><td></td>`);
+          <td><span class="badge ${s0.i === 4 ? 'b-posted' : s0.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s0.i])}${stageDate(s0)}</span></td><td></td>`);
         return head + g.map(p => {
         const img = p.images?.[0]; const s = stageOf(p);
         return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : ''}${gsub(p, multi)}">
@@ -237,7 +237,7 @@ function uploadsPublic(num = 3) {
           <td><span class="sbadge s${esc(p.style)}">${esc(STYLES[p.style]?.name || '-')}</span></td>
           <td class="muted">${p.createdAt ? esc(shortDate(iso(new Date(p.createdAt)))) : ''}</td>
           <td>${confirmBadge(p)}</td>
-          <td>${p.cancelled ? '<span class="badge b-missed">გაუქმებულია</span>' : `<span class="badge ${s.i === 4 ? 'b-posted' : s.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s.i])}</span>`}${s.i === 4 ? linksHtml(s.post) : ''}</td>
+          <td>${p.cancelled ? '<span class="badge b-missed">გაუქმებულია</span>' : `<span class="badge ${s.i === 4 ? 'b-posted' : s.i === 3 ? 'b-planned' : 'b-new'}">${esc(STAGES[s.i])}${stageDate(s)}</span>`}${s.i === 4 ? linksHtml(s.post) : ''}</td>
           <td data-stop>${noteCell(pkey(p))}</td>
         </tr>`;
       }).join(''); }).join('') : '<tr><td colspan="9" class="empty">ჯერ არაფერი ატვირთულა</td></tr>'}</tbody>
@@ -567,6 +567,8 @@ const confirmBadge = p => { const c = confirmState(p); return `<span class="cbad
 
 // ბრენდ მენეჯერის კაბინეტი: მისი პროდუქტები ეტაპებით + ახალი პროდუქტის გამოგზავნა
 const STAGES = ['გამოგზავნილი', 'მუშავდება', 'მზადაა', 'დაიდება', 'დაიდო'];
+// დაიდება / დაიდო ეტაპზე თარიღიც ჩანს (მაგ. „დაიდება: 14 დეკ. 12:00“)
+const stageDate = s => (s.i >= 3 && s.post?.date) ? `: ${esc(shortDate(s.post.date))} ${esc(s.post.time || '')}`.trimEnd() : '';
 function stageOf(p) {
   const post = ours().find(o => o.productId === p.id);
   if (post?.status === 'posted') return { i: 4, post };
