@@ -394,6 +394,10 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 .oldp, .price.oldp, .price-c.oldp { color: #9CA3AF; }
 .price .oldp { font-size: .75em; margin-right: 6px; }
 .promo-lbl { color: var(--red); }
+/* მარკეტინგის ცხრილი: პოსტი მზადაა = ნაცრისფერი ხაზი */
+.table tr.done td, .table tr.ghead.done td { background: #EEF0F3; color: #9CA3AF; }
+.table tr.done .thumb { filter: grayscale(1); opacity: .6; }
+.table tr.done .price-c, .table tr.done .lnk-s, .table tr.done .strong { color: #9CA3AF; }
 .gbox { display: flex; flex-direction: column; gap: 6px; border: 2px solid var(--red); border-radius: 14px; padding: 10px; }
 .ghd { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 2px 4px; }
 .ghd small { color: var(--muted); font-size: 12px; margin-left: 4px; }
@@ -459,6 +463,6 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b
 </head>
 <body>
 <div id="app"></div>
-<script type="module" src="app.js?v=59"></script>
+<script type="module" src="app.js?v=60"></script>
 </body>
 </html>

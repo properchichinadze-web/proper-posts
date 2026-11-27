@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=59';
-import { BRAND } from './config.js?v=59';
+import { createStore } from './store.js?v=60';
+import { BRAND } from './config.js?v=60';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -496,14 +496,16 @@ function bigTable() {
       <tbody>${list.length ? groupsOf(list).map(g => {
         const multi = g.length > 1, m0 = mgr(g[0].managerId);
         const live = g.filter(p => !p.cancelled), gp = live.length && live.every(p => p.pick);
+        // პოსტი მზადაა (გამზადებულ პოსტებშია): ხაზი ნაცრისფერი, რომ სხვებში არ აგერიოს
+        const gdone = g.some(p => stageOf(p).i >= 2);
         const head = !multi ? '' : groupHead(g, (c1, c2) => `<td data-stop>${live.length ? `<label class="pick"><input type="checkbox" data-pick="${live.map(p => p.id).join(',')}" ${gp ? 'checked' : ''}><span>✓</span></label>` : '<span class="muted">-</span>'}</td><td>${c1}</td><td class="strong">${c2}</td><td>${esc(m0?.brand || g[0].brand)}</td><td>${esc(m0?.fullName || g[0].managerName)}</td>
           <td><span class="sbadge s${esc(g[0].style)}">${esc(STYLES[g[0].style]?.name || '-')}</span></td><td></td><td></td><td></td>
           <td class="muted">${g[0].createdAt ? esc(shortDate(iso(new Date(g[0].createdAt)))) : ''}</td>
-          <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>`);
+          <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>`, gdone ? 'done' : '');
         return head + g.map(p => {
         const m = mgr(p.managerId); const img = p.images?.[0];
         const link = safeUrl(p.link);
-        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : p.pick ? 'picked' : ''}${gsub(p, multi)}">
+        return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : gdone ? 'done' : p.pick ? 'picked' : ''}${gsub(p, multi)}">
           <td data-stop>${multi ? '' : p.cancelled ? '<span class="muted">-</span>' : `<label class="pick"><input type="checkbox" data-pick="${p.id}" ${p.pick ? 'checked' : ''}><span>✓</span></label>`}</td>
           <td><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></td>
           <td class="strong">${esc(p.name)}</td>
@@ -670,9 +672,9 @@ function groupsOf(list) {
   for (const p of list) { const k = gid(p); if (!m.has(k)) m.set(k, []); m.get(k).push(p); }
   return [...m.values()].map(g => g.sort((a, b) => (a.groupIdx ?? 0) - (b.groupIdx ?? 0)));
 }
-function groupHead(g, cells) {
+function groupHead(g, cells, extra = '') {
   const k = gid(g[0]), open = S.open.has(k), img = g.find(p => p.images?.[0])?.images[0];
-  return `<tr class="ghead" data-gtoggle="${esc(k)}">${cells(`<div class="gcell"><span class="gpm">${open ? '−' : '+'}</span><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></div>`,
+  return `<tr class="ghead ${extra}" data-gtoggle="${esc(k)}">${cells(`<div class="gcell"><span class="gpm">${open ? '−' : '+'}</span><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></div>`,
     `<b>ერთი დიზაინი</b><span class="gcnt">${g.length} პროდუქტი</span>`)}</tr>`;
 }
 const gsub = (p, multi) => multi ? ` gsub" data-gof="${esc(gid(p))}" style="${S.open.has(gid(p)) ? '' : 'display:none'}` : '';
