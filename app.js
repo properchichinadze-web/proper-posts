@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=56';
-import { BRAND } from './config.js?v=56';
+import { createStore } from './store.js?v=57';
+import { BRAND } from './config.js?v=57';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -630,7 +630,7 @@ function uploadForm() {
 // ერთი დიზაინის (ერთი პოსტის) პროდუქტები: თითო ბლოკი, ველების სახელები ნომრით (name_0, name_1 ...)
 const MAXP = 6;
 const PFIELDS = ['link', 'shop', 'supplier', 'name', 'specs', 'old', 'price'];
-// კვირის აქცია (config.js → promo: true): ძველი ფასი + აქციის ფასი. ძველი ფასი ნაცრისფრად ჩანს.
+// კვირის აქცია (config.js → promo: true): ძველი ფასი + სააქციო ფასი. ძველი ფასი ნაცრისფრად ჩანს.
 const isPromo = s => !!STYLES[s]?.promo;
 const oldTxt = p => p.oldPrice ? `<span class="oldp">${esc(p.oldPrice)} ₾</span> ` : '';
 const oldBlock = p => isPromo(p.style) ? `<div><div class="lbl">ძველი ფასი</div><div class="price oldp">${p.oldPrice ? esc(p.oldPrice) + ' ₾' : '-'}</div></div>` : '';
@@ -646,7 +646,7 @@ function prodBlock(i, st) {
     <div class="imgs" data-gimgs="${i}"></div>
     <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs_${i}" required placeholder="თითო მახასიათებელი ცალკე ხაზზე"></textarea></label>
     ${st.promo ? `<label class="f">ძველი ფასი (₾) *<input type="text" name="old_${i}" required inputmode="decimal" placeholder="მაგ. 299"></label>` : ''}
-    <label class="f">${st.promo ? 'აქციის ფასი' : 'ფასი'} (₾) *<input type="text" name="price_${i}" required inputmode="decimal" placeholder="მაგ. 249"></label>
+    <label class="f">${st.promo ? '<span class="promo-lbl">სააქციო ფასი (₾) *</span>' : 'ფასი (₾) *'}<input type="text" name="price_${i}" required inputmode="decimal" placeholder="მაგ. 249"></label>
   </div>`;
 }
 function drawGImgs() {
@@ -730,7 +730,7 @@ function detailsHtml(p) {
     <div class="muted">${esc(m?.brand || p.brand)} · გამოგზავნა: <b>${esc(m?.fullName || p.managerName)}</b></div>
     ${p.images?.length ? `<div class="big-imgs">${p.images.map((s, i) => `<a href="${s}" download="${esc(p.name)}_${i + 1}.jpg" title="ჩამოტვირთვა"><img src="${s}" alt=""></a>`).join('')}</div>` : ''}
     <div class="grid2">
-      <div><div class="row" style="gap:24px;align-items:flex-start">${oldBlock(p)}<div><div class="lbl">${isPromo(p.style) ? 'აქციის ფასი' : 'ფასი'}</div><div class="price">${p.price ? esc(p.price) + ' ₾' : '-'}</div></div></div></div>
+      <div><div class="row" style="gap:24px;align-items:flex-start">${oldBlock(p)}<div><div class="lbl">${isPromo(p.style) ? 'სააქციო ფასი' : 'ფასი'}</div><div class="price">${p.price ? esc(p.price) + ' ₾' : '-'}</div></div></div></div>
       <div><div class="lbl">${STYLES[p.style]?.link === 'youtube' ? 'YouTube ვიდეო' : 'ლინკი'}</div>${link ? `<a href="${esc(link)}" target="_blank" rel="noopener" class="lnk">${esc(link)}</a>` : '-'}
       ${shop ? `<div class="lbl" style="margin-top:8px">მაღაზია</div><a href="${esc(shop)}" target="_blank" rel="noopener" class="lnk">${esc(shop)}</a>` : ''}
       ${supplier ? `<div class="lbl" style="margin-top:8px">მომწოდებელი</div><a href="${esc(supplier)}" target="_blank" rel="noopener" class="lnk">${esc(supplier)}</a>` : ''}</div>
@@ -740,7 +740,7 @@ function detailsHtml(p) {
 
 // ერთი დიზაინის ყველა პროდუქტი ერთ ფანჯარაში: ფოტოები, ლინკები, ფასი, მახასიათებლები + ყველაფრის კოპირება
 function groupText(g) {
-  return g.map((p, i) => [`${i + 1}. ${p.name}`, isPromo(p.style) ? `ძველი ფასი: ${p.oldPrice ? p.oldPrice + ' ₾' : '-'}` : '', `${isPromo(p.style) ? 'აქციის ფასი' : 'ფასი'}: ${p.price ? p.price + ' ₾' : '-'}`, `ლინკი: ${p.link || '-'}`, p.shop ? `მაღაზია: ${p.shop}` : '', `მომწოდებელი: ${p.supplier || '-'}`, `მახასიათებლები:\n${p.specs || '-'}`].filter(Boolean).join('\n')).join('\n\n');
+  return g.map((p, i) => [`${i + 1}. ${p.name}`, isPromo(p.style) ? `ძველი ფასი: ${p.oldPrice ? p.oldPrice + ' ₾' : '-'}` : '', `${isPromo(p.style) ? 'სააქციო ფასი' : 'ფასი'}: ${p.price ? p.price + ' ₾' : '-'}`, `ლინკი: ${p.link || '-'}`, p.shop ? `მაღაზია: ${p.shop}` : '', `მომწოდებელი: ${p.supplier || '-'}`, `მახასიათებლები:\n${p.specs || '-'}`].filter(Boolean).join('\n')).join('\n\n');
 }
 function viewGroup(k) {
   const g = groupsOf(S.products.filter(p => gid(p) === k))[0]; if (!g) return;
@@ -811,7 +811,7 @@ function editProduct(id) {
     <div class="imgs" id="imgs"></div>
     <label class="f">მახასიათებლები / ტექსტი *<textarea name="specs" required>${esc(p.specs)}</textarea></label>
     ${isPromo(p.style) ? `<label class="f">ძველი ფასი (₾) *<input type="text" name="old" required value="${esc(p.oldPrice || '')}"></label>` : ''}
-    <label class="f">${isPromo(p.style) ? 'აქციის ფასი' : 'ფასი'} (₾) *<input type="text" name="price" required value="${esc(p.price)}"></label>
+    <label class="f">${isPromo(p.style) ? '<span class="promo-lbl">სააქციო ფასი (₾) *</span>' : 'ფასი (₾) *'}<input type="text" name="price" required value="${esc(p.price)}"></label>
     <div class="err" id="eerr"></div>
     <div class="row"><button class="btn">შენახვა</button></div>
   </form>`, true);
