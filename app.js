@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=57';
-import { BRAND } from './config.js?v=57';
+import { createStore } from './store.js?v=58';
+import { BRAND } from './config.js?v=58';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -23,7 +23,7 @@ const catText = m => (m?.cats || []).join(', ');
 const STYLES = BRAND.styles;
 
 const app = document.getElementById('app');
-const S = { role: null, notes: [], showForm: false, ours: [], store: null, user: null, ready: false, hasAdmin: true, managers: [], products: [], settings: { postDays: BRAND.postDays || [2, 5] }, month: null, mode: 'home', filter: 'all', draftImgs: [], gImgs: [[]], open: new Set(), style: null, unsub: [] };
+const S = { role: null, notes: [], showForm: false, ours: [], store: null, user: null, ready: false, hasAdmin: true, managers: [], products: [], settings: { postDays: BRAND.postDays || [2, 5] }, month: null, dpDraft: {}, mode: 'home', filter: 'all', draftImgs: [], gImgs: [[]], open: new Set(), style: null, unsub: [] };
 
 // ───────── დამხმარე ─────────
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -418,7 +418,8 @@ function readyPosts() {
         ${notesHtml(p)}
         ${p.status === 'posted' ? `<div class="row" style="margin-top:8px"><span class="muted small">გამოქვეყნდა: ${esc(shortDate(p.date))} ${esc(p.time || '')}</span>${linksHtml(p)}</div>` : `
         <div class="row" style="margin-top:8px">
-          <input type="date" data-rdate="${p.key}" value="${esc(p.date || '')}" style="width:auto">
+          <input type="hidden" data-rdate="${p.key}" value="${esc(S.dpDraft[p.key] || p.date || '')}">
+          <button type="button" class="btn ghost sm dp-btn" data-dpick="${p.key}" data-dstyle="${esc(p.style || '')}">📅 ${(S.dpDraft[p.key] || p.date) ? esc(niceDate(S.dpDraft[p.key] || p.date)) : 'აირჩიე თარიღი'}</button>
           <input type="time" data-rtime="${p.key}" value="${esc(p.time || '12:00')}" style="width:auto">
           <button class="btn sm" data-rsave="${p.key}">შენახვა</button>${p.date ? `<button class="btn ghost sm" data-rclear="${p.key}">✕ თარიღის მოხსნა</button>` : ''}
           <button class="btn ghost sm" data-prod="${p.id}">ტექსტი ✎</button>
@@ -993,6 +994,42 @@ async function moveManager(id, dir) {
   for (let k = 0; k < re.length; k++) { const m = mgr(re[k]); if (m.order !== k) await S.store.updateManager(re[k], { order: k }); }
 }
 
+// თარიღის ამრჩევი: პოსტის სტილის დღეები (BRAND.styles[x].day) წითლადაა მონიშნული
+function openDatePicker(btn) {
+  $('.dp-pop')?.remove();
+  const key = btn.dataset.dpick, st = STYLES[btn.dataset.dstyle], sday = st?.day;
+  const inp = $(`[data-rdate="${key}"]`);
+  let cur = inp.value ? fromIso(inp.value) : new Date(); cur = new Date(cur.getFullYear(), cur.getMonth(), 1);
+  const pop = document.createElement('div'); pop.className = 'dp-pop';
+  const draw = () => {
+    const y = cur.getFullYear(), m = cur.getMonth(), first = (new Date(y, m, 1).getDay() + 6) % 7, nd = new Date(y, m + 1, 0).getDate();
+    const today = todayIso(); let cells = '';
+    for (let i = 0; i < first; i++) cells += '<span></span>';
+    for (let d = 1; d <= nd; d++) {
+      const ds = iso(new Date(y, m, d)), wd = new Date(y, m, d).getDay();
+      const cls = ['dp-d', sday === wd ? 'dp-style' : '', ds === inp.value ? 'dp-sel' : '', ds === today ? 'dp-today' : ''].join(' ');
+      cells += ds < today ? `<span class="dp-d dp-past">${d}</span>` : `<button type="button" class="${cls}" data-dpd="${ds}">${d}</button>`;
+    }
+    pop.innerHTML = `<div class="dp-head"><button type="button" data-dpm="-1">‹</button><b>${MONTHS[m]} ${y}</b><button type="button" data-dpm="1">›</button></div>
+      <div class="dp-grid">${DOW.map(x => `<span class="dp-w">${x}</span>`).join('')}${cells}</div>
+      ${st && sday != null ? `<div class="dp-leg"><i></i>${esc(st.name)}: ${DOW_FULL[sday]}</div>` : ''}`;
+  };
+  draw();
+  pop.addEventListener('click', e => {
+    e.stopPropagation();
+    const mv = e.target.closest('[data-dpm]'), dd = e.target.closest('[data-dpd]');
+    if (mv) { cur = new Date(cur.getFullYear(), cur.getMonth() + Number(mv.dataset.dpm), 1); draw(); }
+    if (dd) { inp.value = dd.dataset.dpd; S.dpDraft[key] = dd.dataset.dpd; btn.textContent = '📅 ' + niceDate(dd.dataset.dpd); close(); }
+  });
+  const r = btn.getBoundingClientRect();
+  pop.style.top = (window.scrollY + r.bottom + 6) + 'px';
+  pop.style.left = Math.max(8, Math.min(window.scrollX + r.left, window.scrollX + document.documentElement.clientWidth - 300)) + 'px';
+  document.body.appendChild(pop);
+  const close = () => { pop.remove(); document.removeEventListener('click', close); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape') close(); };
+  setTimeout(() => { document.addEventListener('click', close); document.addEventListener('keydown', onKey); });
+}
+
 function bind() {
   $$('[data-mode]').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; render(); window.scrollTo(0, 0); }));
   $('#logout')?.addEventListener('click', () => { const n = new Date(); S.month = { y: n.getFullYear(), m: n.getMonth() }; S.store.logout(); });
@@ -1029,12 +1066,13 @@ function bind() {
     const k = b.dataset.rclear;
     try { await S.store.updatePost(k, { date: null }); toast('თარიღი მოიხსნა: კალენდარში აღარ არის'); } catch (e) { toast(errText(e)); }
   }));
+  $$('[data-dpick]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openDatePicker(b); }));
   $$('[data-rsave]').forEach(b => b.addEventListener('click', async () => {
     const k = b.dataset.rsave;
     const date = $(`[data-rdate="${k}"]`).value, time = $(`[data-rtime="${k}"]`).value || '12:00';
     if (!date) return toast('აირჩიე თარიღი');
     if (date < todayIso()) return toast('წარსული თარიღი არ შეიძლება');
-    try { await S.store.updatePost(k, { date, time }); toast('თარიღი შენახულია: ' + niceDate(date) + ' ' + time); } catch (e) { toast(errText(e)); }
+    try { await S.store.updatePost(k, { date, time }); delete S.dpDraft[k]; toast('თარიღი შენახულია: ' + niceDate(date) + ' ' + time); } catch (e) { toast(errText(e)); }
   }));
   $$('[data-mgr]').forEach(b => b.addEventListener('click', () => openManager(b.dataset.mgr)));
   $$('[data-medit]').forEach(b => b.addEventListener('click', () => managerForm(mgr(b.dataset.medit))));

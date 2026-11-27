@@ -1,6 +1,6 @@
 // მონაცემების ფენა: Firebase (გუნდისთვის საერთო) ან სადემო (localStorage).
 // შესვლა: მომხმარებელი + პაროლი. როლები: admin (მარკეტინგი) და brand (ბრენდ მენეჯერი).
-import { firebaseConfig, BRAND } from './config.js?v=57';
+import { firebaseConfig, BRAND } from './config.js?v=58';
 
 export const DEMO = !firebaseConfig.apiKey;
 const DEFAULT_SETTINGS = { postDays: BRAND.postDays || [2, 5] }; // 2 = სამშაბათი, 5 = პარასკევი
