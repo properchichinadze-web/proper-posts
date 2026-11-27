@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=58';
-import { BRAND } from './config.js?v=58';
+import { createStore } from './store.js?v=59';
+import { BRAND } from './config.js?v=59';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -999,7 +999,9 @@ function openDatePicker(btn) {
   $('.dp-pop')?.remove();
   const key = btn.dataset.dpick, st = STYLES[btn.dataset.dstyle], sday = st?.day;
   const inp = $(`[data-rdate="${key}"]`);
-  let cur = inp.value ? fromIso(inp.value) : new Date(); cur = new Date(cur.getFullYear(), cur.getMonth(), 1);
+  let cur = inp.value ? fromIso(inp.value) : new Date();
+  if (!inp.value && sday != null) while (cur.getDay() !== sday) cur.setDate(cur.getDate() + 1);   // იხსნება სტილის უახლოესი დღის თვეზე
+  cur = new Date(cur.getFullYear(), cur.getMonth(), 1);
   const pop = document.createElement('div'); pop.className = 'dp-pop';
   const draw = () => {
     const y = cur.getFullYear(), m = cur.getMonth(), first = (new Date(y, m, 1).getDay() + 6) % 7, nd = new Date(y, m + 1, 0).getDate();
@@ -1008,7 +1010,9 @@ function openDatePicker(btn) {
     for (let d = 1; d <= nd; d++) {
       const ds = iso(new Date(y, m, d)), wd = new Date(y, m, d).getDay();
       const cls = ['dp-d', sday === wd ? 'dp-style' : '', ds === inp.value ? 'dp-sel' : '', ds === today ? 'dp-today' : ''].join(' ');
-      cells += ds < today ? `<span class="dp-d dp-past">${d}</span>` : `<button type="button" class="${cls}" data-dpd="${ds}">${d}</button>`;
+      // მომხმარებლის მოთხოვნა (2026-11-28): ირჩევა მხოლოდ ამ სტილის დღე, დანარჩენი ნაცრისფერია
+      const off = ds < today || (sday != null && wd !== sday);
+      cells += off ? `<span class="dp-d dp-past">${d}</span>` : `<button type="button" class="${cls}" data-dpd="${ds}">${d}</button>`;
     }
     pop.innerHTML = `<div class="dp-head"><button type="button" data-dpm="-1">‹</button><b>${MONTHS[m]} ${y}</b><button type="button" data-dpm="1">›</button></div>
       <div class="dp-grid">${DOW.map(x => `<span class="dp-w">${x}</span>`).join('')}${cells}</div>
