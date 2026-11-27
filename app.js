@@ -1,5 +1,5 @@
-import { createStore } from './store.js?v=61';
-import { BRAND } from './config.js?v=61';
+import { createStore } from './store.js?v=62';
+import { BRAND } from './config.js?v=62';
 document.title = BRAND.title;
 // ბრენდის ფერები და ხატულა config.js-დან
 (() => {
@@ -222,7 +222,7 @@ function uploadsPublic(num = 3) {
       <thead><tr><th>ფოტო</th><th>პროდუქტი</th><th>ბრენდი</th><th>მენეჯერი</th><th>სტილი</th><th>გამოგზავნა</th><th>დადასტურება</th><th>ეტაპი</th><th>შენიშვნა</th></tr></thead>
       <tbody>${list.length ? groupsOf(list).map(g => {
         const multi = g.length > 1, s0 = stageOf(g[0]);
-        const head = !multi ? '' : groupHead(g, (c1, c2) => `<td>${c1}</td><td class="strong">${c2}</td><td>${esc(g[0].brand)}</td><td>${esc(g[0].managerName)}</td>
+        const head = !multi ? '' : groupHead(g, (c1, c2) => `<td><div style="display:flex;align-items:center;gap:6px">${c1}${postThumb(s0)}</div></td><td class="strong">${c2}</td><td>${esc(g[0].brand)}</td><td>${esc(g[0].managerName)}</td>
           <td><span class="sbadge s${esc(g[0].style)}">${esc(STYLES[g[0].style]?.name || '-')}</span></td>
           <td class="muted">${g[0].createdAt ? esc(shortDate(iso(new Date(g[0].createdAt)))) : ''}</td>
           <td>${confirmBadge(g.find(p => !p.confirmed && !p.cancelled) || g[0])}</td>
@@ -230,7 +230,7 @@ function uploadsPublic(num = 3) {
         return head + g.map(p => {
         const img = p.images?.[0]; const s = stageOf(p);
         return `<tr data-prod="${p.id}" class="${p.cancelled ? 'cancelled' : ''}${gsub(p, multi)}">
-          <td><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span></td>
+          <td><div style="display:flex;align-items:center;gap:6px"><span class="thumb sm" style="${img ? `background-image:url('${img}')` : ''}"></span>${multi ? '' : postThumb(s)}</div></td>
           <td class="strong">${esc(p.name)}</td>
           <td>${esc(p.brand)}</td>
           <td>${esc(p.managerName)}</td>
@@ -569,6 +569,8 @@ const confirmBadge = p => { const c = confirmState(p); return `<span class="cbad
 const STAGES = ['გამოგზავნილი', 'მუშავდება', 'მზადაა', 'დაიდება', 'დაიდო'];
 // დაიდება / დაიდო ეტაპზე თარიღიც ჩანს (მაგ. „დაიდება: 14 დეკ. 12:00“)
 const stageDate = s => (s.i >= 3 && s.post?.date) ? `: ${esc(shortDate(s.post.date))} ${esc(s.post.time || '')}`.trimEnd() : '';
+// ატვირთული პროდუქტის გვერდით: გამზადებული პოსტის სურათი; დაჭერით იხსნება პოსტი (სურათი, ვიდეო, ტექსტი)
+const postThumb = s => (s.i >= 2 && s.post?.images?.[0]) ? `<span class="thumb sm" data-stop data-ourview="${esc(s.post.id)}" title="გამზადებული პოსტი" style="background-image:url('${s.post.images[0]}');cursor:pointer"></span>` : '';
 function stageOf(p) {
   const post = ours().find(o => o.productId === p.id);
   if (post?.status === 'posted') return { i: 4, post };
